@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distributions and packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env
+
+# Jupyter and IDEs
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Data and Logs
+*.csv
+*.log
+*.dat
+Dataset/
+# ML Models and Weights
+*.h5
+*.pkl
+*.pb
+*.tflite
+*.onnx
+*.pt
+*.pth
+
+# TensorFlow/Keras specific
+checkpoint/
+saved_model/
