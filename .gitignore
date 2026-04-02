@@ -13,6 +13,7 @@ venv/
 env/
 .venv/
 .env
+Traning/venv/
 
 # Jupyter and IDEs
 .ipynb_checkpoints/
@@ -27,15 +28,5 @@ env/
 *.log
 *.dat
 Dataset/
-# ML Models and Weights
-*.h5
-*.pkl
-*.pb
-*.tflite
-*.onnx
-*.pt
-*.pth
 
-# TensorFlow/Keras specific
-checkpoint/
-saved_model/
+
