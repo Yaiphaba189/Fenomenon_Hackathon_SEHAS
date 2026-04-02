@@ -1,10 +1,12 @@
 import os
+import logging
 import firebase_admin
 from firebase_admin import credentials, messaging
 from dotenv import load_dotenv
 from pathlib import Path
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 # Path to the firebase-auth.json file
 FIREBASE_CERT_PATH = os.getenv("FIREBASE_CERT_PATH", str(Path(__file__).parent / "firebase-auth.json"))
@@ -22,22 +24,26 @@ class NotificationService:
         """
         try:
             if not os.path.exists(FIREBASE_CERT_PATH):
-                print(f"⚠️ Firebase certificate not found at {FIREBASE_CERT_PATH}. Notifications disabled.")
+                logger.warning(
+                    "Firebase certificate not found at %s. Notifications disabled.",
+                    FIREBASE_CERT_PATH,
+                )
                 return
 
             cred = credentials.Certificate(FIREBASE_CERT_PATH)
-            firebase_admin.initialize_app(cred)
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
             NotificationService._initialized = True
-            print("✅ Firebase Admin SDK initialized successfully.")
-        except Exception as e:
-            print(f"❌ Firebase Initialization Error: {e}")
+            logger.info("Firebase Admin SDK initialized successfully.")
+        except Exception:
+            logger.exception("Firebase initialization error")
 
     def send_push_notification(self, token: str, title: str, body: str, data: dict = None):
         """
         Sends an FCM Push Notification to a specific device token.
         """
         if not NotificationService._initialized:
-            print("⚠️ Cannot send notification: Firebase not initialized.")
+            logger.warning("Cannot send notification: Firebase not initialized.")
             return False
             
         try:
@@ -50,10 +56,10 @@ class NotificationService:
                 token=token,
             )
             response = messaging.send(message)
-            print(f"📱 FCM PUSH SENT: {response}")
+            logger.info("FCM push sent: %s", response)
             return True
-        except Exception as e:
-            print(f"❌ FCM Push Error: {e}")
+        except Exception:
+            logger.exception("FCM push error")
             return False
 
     def trigger_in_app_alert(self, patient_id: str, alert_type: str, severity: str):
@@ -61,5 +67,9 @@ class NotificationService:
         Log an alert status for the dashboard. 
         In a full implementation, this could also broadcast via Supabase Realtime.
         """
-        print(f"🔔 IN-APP ALERT: {patient_id} | {alert_type.upper()} | {severity}")
+        logger.info("In-app alert: %s | %s | %s", patient_id, alert_type.upper(), severity)
         return True
+
+    @property
+    def is_ready(self) -> bool:
+        return NotificationService._initialized
