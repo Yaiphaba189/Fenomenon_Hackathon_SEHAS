@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { api } from '../../services/api';
 import { useAppStore } from '../../store/useAppStore';
+import { Config } from '../../constants/config';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -27,6 +28,19 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // DEBUG: Test raw connection to backend
+  const testConnection = async () => {
+    const url = `${Config.API_BASE_URL}/health`;
+    Alert.alert('Testing...', `Connecting to:\n${url}`);
+    try {
+      const res = await fetch(url, { method: 'GET' });
+      const data = await res.json();
+      Alert.alert('✅ SUCCESS', JSON.stringify(data, null, 2));
+    } catch (err: any) {
+      Alert.alert('❌ FAILED', `Error: ${err.message}\n\nURL: ${url}`);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !email.includes('@')) {
@@ -133,6 +147,14 @@ export default function LoginScreen() {
             onPress={() => router.push('/(onboarding)/register')}
           >
             <Text style={styles.skipText}>Don't have an account? Register</Text>
+          </TouchableOpacity>
+
+          {/* DEBUG: Remove after fixing */}
+          <TouchableOpacity
+            style={{ marginTop: 20, padding: 14, backgroundColor: '#ff6600', borderRadius: 10, alignItems: 'center' }}
+            onPress={testConnection}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>🔧 Test Server Connection</Text>
           </TouchableOpacity>
         </View>
       </View>

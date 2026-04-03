@@ -33,7 +33,9 @@ from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from backend.ml.predict import PredictionResult, SEHASPredictor
+# NOTE: backend.ml.predict is lazy-imported inside lifespan() to prevent
+# TensorFlow's C SSL symbols from colliding with psycopg2's SSL at startup.
+# See: lifespan(), _require_loaded_model(), _apply_contextual_rules()
 from backend.services import database as db
 from backend.services.models import Patient, PatientRegister, PatientLogin
 from backend.services.notifications import NotificationService
@@ -118,7 +120,7 @@ def validate_runtime_configuration() -> None:
         raise RuntimeError("At least one API key must be configured.")
 
 
-predictor: Optional[SEHASPredictor] = None
+predictor: Optional[Any] = None
 notification_service: Optional[NotificationService] = None
 alert_worker_task: Optional[asyncio.Task] = None
 
@@ -335,8 +337,10 @@ async def lifespan(app: FastAPI):
     logger.info("Applying database schema...")
     db.ensure_database_schema()
 
+    # Lazy-import TensorFlow AFTER database is connected to avoid SSL symbol clash
+    from backend.ml.predict import SEHASPredictor as _Predictor
     logger.info("Loading SEHAS LSTM model...")
-    predictor = SEHASPredictor()
+    predictor = _Predictor()
 
     logger.info("Initializing notification service...")
     notification_service = NotificationService()
@@ -423,7 +427,7 @@ class BatchResponse(BaseModel):
     predictions: list[BatchPredictionItem]
 
 
-def _require_loaded_model() -> SEHASPredictor:
+def _require_loaded_model():
     if predictor is None:
         raise HTTPException(status_code=503, detail="Model not loaded yet.")
     return predictor
@@ -527,7 +531,7 @@ def _haversine_meters(lat1: float, lng1: float, lat2: float, lng2: float) -> flo
     return 2 * radius * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _apply_contextual_rules(data: SensorInput, result: PredictionResult) -> PredictionResult:
+def _apply_contextual_rules(data: SensorInput, result: Any) -> Any:
     score = result.score
     reasons: list[str] = []
 
@@ -550,7 +554,8 @@ def _apply_contextual_rules(data: SensorInput, result: PredictionResult) -> Pred
         score = max(score, 0.88)
         reasons.append("critical heart-rate threshold")
 
-    classified = SEHASPredictor._classify(score)
+    from backend.ml.predict import SEHASPredictor as _Predictor, PredictionResult
+    classified = _Predictor._classify(score)
     if reasons:
         return PredictionResult(
             score=classified.score,

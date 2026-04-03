@@ -4,50 +4,50 @@
 
 export const Colors = {
   // Core backgrounds
-  background: '#0A0E1A',
-  surface: '#141829',
-  surfaceElevated: '#1C2137',
-  surfaceBorder: '#252A40',
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  surfaceElevated: '#F8FAFC',
+  surfaceBorder: '#E2E8F0',
 
   // Brand
-  primary: '#00D4AA',
-  primaryMuted: '#00D4AA22',
-  primaryDark: '#00A88A',
-  accent: '#667EEA',
-  accentMuted: '#667EEA22',
+  primary: '#00C896', // Modern crisp green
+  primaryMuted: '#00C89622',
+  primaryDark: '#00A078',
+  accent: '#10B981', // Emerald green
+  accentMuted: '#10B98122',
 
   // Semantic
-  danger: '#FF4757',
-  dangerMuted: '#FF475722',
-  dangerDark: '#CC3945',
-  warning: '#FFA502',
-  warningMuted: '#FFA50222',
-  success: '#2ED573',
-  successMuted: '#2ED57322',
-  info: '#54A0FF',
-  infoMuted: '#54A0FF22',
+  danger: '#EF4444',
+  dangerMuted: '#EF444422',
+  dangerDark: '#B91C1C',
+  warning: '#F59E0B',
+  warningMuted: '#F59E0B22',
+  success: '#10B981',
+  successMuted: '#10B98122',
+  info: '#3B82F6',
+  infoMuted: '#3B82F622',
 
   // Text
-  textPrimary: '#EAEEFF',
-  textSecondary: '#6B7394',
-  textMuted: '#3D4565',
-  textInverse: '#0A0E1A',
+  textPrimary: '#0F172A', // Dark slate for contrast
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
+  textInverse: '#FFFFFF',
 
   // Misc
   white: '#FFFFFF',
   black: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.6)',
-  glassBg: 'rgba(20, 24, 41, 0.85)',
-  glassStroke: 'rgba(255, 255, 255, 0.06)',
+  overlay: 'rgba(0, 0, 0, 0.4)',
+  glassBg: 'rgba(255, 255, 255, 0.90)',
+  glassStroke: 'rgba(0, 0, 0, 0.08)',
 };
 
 export const Gradients = {
-  primary: ['#00D4AA', '#00A88A'] as const,
-  danger: ['#FF6B81', '#FF4757'] as const,
-  accent: ['#667EEA', '#764BA2'] as const,
-  dark: ['#141829', '#0A0E1A'] as const,
-  card: ['rgba(28, 33, 55, 0.95)', 'rgba(20, 24, 41, 0.95)'] as const,
-  sosBg: ['#FF4757', '#CC3945'] as const,
+  primary: ['#00C896', '#00A078'] as const,
+  danger: ['#F87171', '#EF4444'] as const,
+  accent: ['#34D399', '#10B981'] as const,
+  dark: ['#F8FAFC', '#FFFFFF'] as const,
+  card: ['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.95)'] as const,
+  sosBg: ['#EF4444', '#DC2626'] as const,
 };
 
 export const Typography = {

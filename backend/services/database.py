@@ -28,6 +28,12 @@ def get_database_url() -> str:
     database_url = os.getenv("SUPABASE_URL") or os.getenv("DATABASE_URL")
     if not database_url:
         raise ValueError("DATABASE_URL (SUPABASE_URL) not found in environment.")
+    
+    # Force SSL for Supabase connection poolers
+    if "sslmode=" not in database_url:
+        separator = "&" if "?" in database_url else "?"
+        database_url += f"{separator}sslmode=require"
+        
     return database_url
 
 
@@ -78,6 +84,9 @@ def check_connection() -> bool:
 
 def save_vital_reading(patient_id, heart_rate, acc_mean, acc_std):
     """Log a single vital reading to the historical time-series database."""
+    if str(patient_id).startswith("local-"):
+        return True # Silently discard corrupted offline IDs to prevent postgres crash
+
     query = """
         INSERT INTO vitals_log (patient_id, heart_rate, acc_mean, acc_std)
         VALUES (%s, %s, %s, %s)
@@ -93,6 +102,10 @@ def save_vital_reading(patient_id, heart_rate, acc_mean, acc_std):
 
 def create_alert(patient_id, type, severity, sensor_snapshot, gps_lat=None, gps_lng=None):
     """Persist a critical emergency alert record."""
+    if str(patient_id).startswith("local-"):
+        import uuid
+        return f"local-alert-{uuid.uuid4()}"
+
     query = """
         INSERT INTO alerts (patient_id, type, severity, sensor_snapshot, gps_lat, gps_lng)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -205,6 +218,7 @@ def update_alert_status(alert_id, status):
 
 def get_alert_status(alert_id):
     """Retrieve the current status of an alert."""
+    if str(alert_id).startswith("local-"): return None
     query = "SELECT status FROM alerts WHERE id = %s"
     try:
         with get_cursor() as cur:
@@ -218,6 +232,7 @@ def get_alert_status(alert_id):
 
 def get_alert_history(patient_id, limit=20):
     """Fetch recent alert history for a specific patient."""
+    if str(patient_id).startswith("local-"): return []
     query = "SELECT * FROM alerts WHERE patient_id = %s ORDER BY timestamp DESC LIMIT %s"
     try:
         with get_cursor(dict_rows=True) as cur:
@@ -421,6 +436,7 @@ def get_due_dispatched_alerts(escalation_seconds: int, limit: int = 50):
 
 
 def claim_alert_for_dispatch(alert_id):
+    if str(alert_id).startswith("local-"): return None
     query = """
         UPDATE alerts
         SET status = 'dispatched',
@@ -438,6 +454,7 @@ def claim_alert_for_dispatch(alert_id):
 
 
 def claim_alert_for_escalation(alert_id):
+    if str(alert_id).startswith("local-"): return None
     query = """
         UPDATE alerts
         SET status = 'escalated',
@@ -455,6 +472,7 @@ def claim_alert_for_escalation(alert_id):
 
 
 def cancel_alert_if_pending(alert_id):
+    if str(alert_id).startswith("local-"): return True
     query = """
         UPDATE alerts
         SET status = 'cancelled',

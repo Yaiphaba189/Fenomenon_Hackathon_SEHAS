@@ -4,13 +4,14 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, BorderRadius, Spacing, Shadows } from '../constants/theme';
 
 interface VitalCardProps {
   title: string;
   value: string | number;
   unit: string;
-  icon: string;
+  icon: keyof typeof Feather.glyphMap;
   color?: string;
   subtitle?: string;
   compact?: boolean;
@@ -51,7 +52,7 @@ export function VitalCard({
       ]}
     >
       <View style={styles.header}>
-        <Text style={styles.icon}>{icon}</Text>
+        <Feather name={icon} size={16} color={Colors.textSecondary} />
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.valueRow}>

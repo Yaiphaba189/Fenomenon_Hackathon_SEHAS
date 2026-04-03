@@ -155,7 +155,7 @@ export default function HeartRateScreen() {
 
   // Timer logic for 15s scan
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (isScanning) {
       if (timeLeft > 0) {
         // Calculate partial BPM for UI feedback while scanning

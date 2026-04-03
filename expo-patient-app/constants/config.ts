@@ -4,7 +4,7 @@
 
 export const Config = {
   // Backend API
-  API_BASE_URL: 'http://10.209.223.41:8000', // Your machine's local IP
+  API_BASE_URL: 'http://16.171.46.26:8000', // AWS EC2 Cloud Backend
   API_KEY: 'IlrsksA-eTi2AcRj4BrirqLLz0iIxpm9MF0YYzZGh0XUjehMaOUE87hcqFFq8k-0',
 
   // Sensor settings

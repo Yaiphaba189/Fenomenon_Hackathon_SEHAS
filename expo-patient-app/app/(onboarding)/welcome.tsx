@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { Config } from '../../constants/config';
 
@@ -89,7 +90,7 @@ export default function WelcomeScreen() {
             { transform: [{ scale: pulseAnim }] },
           ]}
         >
-          <Text style={styles.heartIcon}>💚</Text>
+          <Feather name="heart" size={36} color={Colors.primary} />
         </Animated.View>
         <Text style={styles.appName}>{Config.APP_NAME}</Text>
         <Text style={styles.appSubtitle}>Smart Emergency Health Alert System</Text>
@@ -106,22 +107,22 @@ export default function WelcomeScreen() {
         ]}
       >
         <FeatureItem
-          icon="📱"
+          icon="smartphone"
           title="Zero Hardware Needed"
           description="Uses your phone's built-in sensors"
         />
         <FeatureItem
-          icon="⚡"
+          icon="zap"
           title="5-Second Response"
           description="AI-powered instant emergency detection"
         />
         <FeatureItem
-          icon="🛡️"
+          icon="shield"
           title="24/7 Monitoring"
           description="Continuous health tracking & alerts"
         />
         <FeatureItem
-          icon="📍"
+          icon="map-pin"
           title="Live Location"
           description="Auto-shares GPS with caregivers"
         />
@@ -162,14 +163,14 @@ function FeatureItem({
   title,
   description,
 }: {
-  icon: string;
+  icon: keyof typeof Feather.glyphMap;
   title: string;
   description: string;
 }) {
   return (
     <View style={styles.featureItem}>
       <View style={styles.featureIcon}>
-        <Text style={styles.featureEmoji}>{icon}</Text>
+        <Feather name={icon} size={20} color={Colors.primary} />
       </View>
       <View style={styles.featureText}>
         <Text style={styles.featureTitle}>{title}</Text>
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary + '33',
   },
   heartIcon: {
-    fontSize: 36,
+    // Replaced by Feather vector icon
   },
   appName: {
     fontFamily: Typography.fontFamily.extraBold,

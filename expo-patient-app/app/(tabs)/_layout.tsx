@@ -5,13 +5,19 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing } from '../../constants/theme';
 import { useAppStore } from '../../store/useAppStore';
 
-function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
+function TabIcon({ icon, label, focused }: { icon: keyof typeof Feather.glyphMap; label: string; focused: boolean }) {
   return (
     <View style={[tabStyles.container, focused && tabStyles.focused]}>
-      <Text style={[tabStyles.icon, focused && tabStyles.iconFocused]}>{icon}</Text>
+      <Feather 
+        name={icon} 
+        size={22} 
+        color={focused ? Colors.primary : Colors.textMuted} 
+        style={focused ? tabStyles.iconFocused : tabStyles.icon} 
+      />
       <Text style={[tabStyles.label, focused && tabStyles.labelFocused]}>{label}</Text>
       {focused && <View style={tabStyles.indicator} />}
     </View>
@@ -27,8 +33,7 @@ const tabStyles = StyleSheet.create({
   },
   focused: {},
   icon: {
-    fontSize: 22,
-    opacity: 0.5,
+    opacity: 0.6,
   },
   iconFocused: {
     opacity: 1,
@@ -73,7 +78,7 @@ export default function TabsLayout() {
         name="dashboard"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="📊" label="Dashboard" focused={focused} />
+            <TabIcon icon="activity" label="Dashboard" focused={focused} />
           ),
         }}
       />
@@ -81,7 +86,7 @@ export default function TabsLayout() {
         name="heart-rate"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="❤️" label="Heart Rate" focused={focused} />
+            <TabIcon icon="heart" label="Heart Rate" focused={focused} />
           ),
         }}
       />
@@ -89,7 +94,7 @@ export default function TabsLayout() {
         name="alerts"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="🔔" label="Alerts" focused={focused} />
+            <TabIcon icon="bell" label="Alerts" focused={focused} />
           ),
         }}
       />
@@ -97,7 +102,7 @@ export default function TabsLayout() {
         name="settings"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon icon="⚙️" label="Settings" focused={focused} />
+            <TabIcon icon="settings" label="Settings" focused={focused} />
           ),
         }}
       />

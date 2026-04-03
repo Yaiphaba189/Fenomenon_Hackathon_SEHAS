@@ -1,0 +1,35 @@
+# Backend (runs on AWS, not in the mobile app)
+../backend/
+../api.py
+../schema.sql
+../pyproject.toml
+../uv.lock
+../.venv/
+../Dockerfile
+../docker-compose.yml
+../.env
+
+# ML Training Data & Models
+../Dataset/
+../Traning/
+../conversion/
+
+# Git
+../.git/
+../.github/
+
+# Python caches
+../__pycache__/
+*.pyc
+
+# Node
+node_modules/.cache/
+
+# Build artifacts
+*.tar.gz
+*.zip
+
+# Documentation
+../PROJECT_DOCUMENTATION.md
+../PROJECT_REPORT.md
+../IMPLEMENTATION_STATUS.md

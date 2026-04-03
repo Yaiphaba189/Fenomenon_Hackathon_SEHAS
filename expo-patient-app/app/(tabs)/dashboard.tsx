@@ -160,8 +160,18 @@ export default function DashboardScreen() {
         });
       }, 1000);
       Alert.alert('🚨 SOS Sent', `Emergency alert dispatched.\nCancel within ${Config.ALERT_SAFETY_WINDOW_SECONDS}s if false alarm.`);
+      
+      // Force native OS dialer to pop open for Demo
+      import('react-native').then(({ Linking }) => {
+        Linking.openURL('tel:911').catch(err => console.log('Dialer bypassed', err));
+      });
+      
     } catch {
-      Alert.alert('SOS Error', 'Could not send SOS. Call emergency services directly.');
+      import('react-native').then(({ Linking }) => {
+        Linking.openURL('tel:911').catch(() => {
+           Alert.alert('SOS Error', 'Could not send SOS. Call emergency services directly.');
+        });
+      });
       setSosTriggered(false);
     }
   };
@@ -235,19 +245,21 @@ export default function DashboardScreen() {
       {/* Vitals Grid */}
       <Text style={styles.sectionTitle}>Live Vitals</Text>
       <View style={styles.vitalsGrid}>
-        <VitalCard title="Heart Rate" value={heartRate?.bpm ?? '--'} unit="BPM" icon="❤️"
+        <VitalCard title="Heart Rate" value={heartRate?.bpm ?? '--'} unit="BPM" icon="heart"
           color={heartRate && (heartRate.bpm < 40 || heartRate.bpm > 130) ? Colors.danger : heartRate && (heartRate.bpm < 55 || heartRate.bpm > 100) ? Colors.warning : Colors.primary}
           subtitle={heartRate ? `Confidence: ${(heartRate.confidence * 100).toFixed(0)}%` : undefined} />
-        <VitalCard title="Motion" value={latestSensorReading?.accMean?.toFixed(2) ?? '--'} unit="m/s²" icon="🏃"
+        <VitalCard title="Motion" value={latestSensorReading?.accMean?.toFixed(2) ?? '--'} unit="m/s²" icon="activity"
           color={latestSensorReading && latestSensorReading.accStd > 0.7 ? Colors.danger : Colors.accent}
           subtitle={`σ: ${latestSensorReading?.accStd?.toFixed(3) ?? '--'}`} />
       </View>
       <View style={styles.vitalsGrid}>
-        <VitalCard title="Pitch" value={latestSensorReading?.gyroPitch?.toFixed(1) ?? '--'} unit="°" icon="📐"
-          color={latestSensorReading && Math.abs(latestSensorReading.gyroPitch) < 15 ? Colors.warning : Colors.info} compact />
-        <VitalCard title="Roll" value={latestSensorReading?.gyroRoll?.toFixed(1) ?? '--'} unit="°" icon="🔄" color={Colors.info} compact />
-        <VitalCard title="GPS" value={currentLocation ? '✓' : '—'} unit={currentLocation ? `±${currentLocation.accuracy?.toFixed(0) ?? '?'}m` : ''} icon="📍"
-          color={currentLocation ? Colors.success : Colors.textMuted} compact />
+        <VitalCard title="Pitch" value={latestSensorReading?.gyroPitch?.toFixed(1) ?? '--'} unit="°" icon="compass"
+          color={latestSensorReading && Math.abs(latestSensorReading.gyroPitch) < 15 ? Colors.warning : Colors.info} />
+        <VitalCard title="Roll" value={latestSensorReading?.gyroRoll?.toFixed(1) ?? '--'} unit="°" icon="rotate-cw" color={Colors.info} />
+      </View>
+      <View style={styles.vitalsGrid}>
+        <VitalCard title="Location (GPS)" value={currentLocation ? '✓' : '—'} unit={currentLocation ? `±${currentLocation.accuracy?.toFixed(0) ?? '?'}m` : ''} icon="map-pin"
+          color={currentLocation ? Colors.success : Colors.textMuted} />
       </View>
 
       {/* Connection */}

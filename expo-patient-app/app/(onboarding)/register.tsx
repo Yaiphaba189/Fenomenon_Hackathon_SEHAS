@@ -99,7 +99,7 @@ export default function RegisterScreen() {
       });
 
       setPatient({
-        id: response.patient_id || `local-${Date.now()}`,
+        id: response.patient_id || '00000000-0000-0000-0000-000000000000'.replace(/0/g, () => (Math.random()*16|0).toString(16)),
         name: name.trim(),
         age: parseInt(age),
         medicalHistory: medicalHistory.trim(),
@@ -111,8 +111,8 @@ export default function RegisterScreen() {
       router.replace('/(tabs)/dashboard');
     } catch (error: any) {
       console.error('Registration error:', error);
-      // If backend is unreachable, proceed offline with a local ID
-      const localId = `local-${Date.now()}`;
+      // If backend is unreachable, proceed offline with a local UUID
+      const localId = '00000000-0000-0000-0000-000000000000'.replace(/0/g, () => (Math.random()*16|0).toString(16));
       setPatient({
         id: localId,
         name: name.trim(),
@@ -275,7 +275,7 @@ export default function RegisterScreen() {
         {/* Skip for demo */}
         <TouchableOpacity
           style={styles.skipButton}
-          onPress={() => router.push('/(onboarding)/login')}
+          onPress={() => router.push('/(onboarding)/login' as any)}
         >
           <Text style={styles.skipText}>Already registered? Log in instead</Text>
         </TouchableOpacity>

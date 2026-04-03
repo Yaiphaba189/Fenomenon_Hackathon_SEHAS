@@ -4,6 +4,7 @@
  */
 
 import { Config } from '../constants/config';
+import { getCachedPushToken } from './notifications';
 
 const headers = () => ({
   'Content-Type': 'application/json',
@@ -135,17 +136,19 @@ class ApiClient {
 
   // Predictions
   async predict(data: SensorPayload): Promise<PredictionResponse> {
+    const token = getCachedPushToken();
     return this.request('/predict', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, device_token: data.device_token || token || undefined }),
     });
   }
 
   // Voice SOS
   async voiceSOS(data: SensorPayload): Promise<{ status: string; message: string; alert_id: string }> {
+    const token = getCachedPushToken();
     return this.request('/voice-sos', {
       method: 'POST',
-      body: JSON.stringify({ ...data, voice_triggered: true }),
+      body: JSON.stringify({ ...data, voice_triggered: true, device_token: data.device_token || token || undefined }),
     });
   }
 

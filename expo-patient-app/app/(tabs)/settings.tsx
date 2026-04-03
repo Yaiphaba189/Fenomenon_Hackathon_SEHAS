@@ -13,6 +13,7 @@ import {
   Switch,
   Alert,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../constants/theme';
 import { useAppStore } from '../../store/useAppStore';
@@ -70,7 +71,10 @@ export default function SettingsScreen() {
       {/* Patient Profile */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>👤 Patient Profile</Text>
+          <View style={styles.iconTitleRow}>
+            <Feather name="user" size={18} color={Colors.textSecondary} />
+            <Text style={styles.sectionTitle}>Patient Profile</Text>
+          </View>
           <TouchableOpacity onPress={() => setEditingProfile(!editingProfile)}>
             <Text style={styles.editButton}>{editingProfile ? 'Cancel' : 'Edit'}</Text>
           </TouchableOpacity>
@@ -101,7 +105,10 @@ export default function SettingsScreen() {
 
       {/* Emergency Contacts */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📞 Emergency Contacts</Text>
+      <View style={styles.iconTitleRow}>
+        <Feather name="phone-call" size={18} color={Colors.textSecondary} />
+        <Text style={styles.sectionTitle}>Emergency Contacts</Text>
+      </View>
         <View style={styles.card}>
           {patient?.emergencyContacts?.length ? (
             patient.emergencyContacts.map((c, i) => (
@@ -120,7 +127,10 @@ export default function SettingsScreen() {
 
       {/* Monitoring Config */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚙️ Monitoring</Text>
+      <View style={styles.iconTitleRow}>
+        <Feather name="activity" size={18} color={Colors.textSecondary} />
+        <Text style={styles.sectionTitle}>Monitoring</Text>
+      </View>
         <View style={styles.card}>
           <SettingToggle label="Demo Mode" subtitle="Use simulated sensor data" value={demoMode} onToggle={setDemoMode} />
           <SettingToggle label="Active Monitoring" subtitle="Real-time sensor collection" value={isMonitoring} onToggle={setMonitoring} />
@@ -129,7 +139,10 @@ export default function SettingsScreen() {
 
       {/* Backend Config */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🔗 Backend Connection</Text>
+      <View style={styles.iconTitleRow}>
+        <Feather name="server" size={18} color={Colors.textSecondary} />
+        <Text style={styles.sectionTitle}>Backend Connection</Text>
+      </View>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>API Base URL</Text>
           <View style={styles.urlRow}>
@@ -152,7 +165,10 @@ export default function SettingsScreen() {
 
       {/* App Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>ℹ️ About</Text>
+      <View style={styles.iconTitleRow}>
+        <Feather name="info" size={18} color={Colors.textSecondary} />
+        <Text style={styles.sectionTitle}>About</Text>
+      </View>
         <View style={styles.card}>
           <SettingRow label="App" value={Config.APP_NAME} />
           <SettingRow label="Version" value={Config.APP_VERSION} />
@@ -230,7 +246,8 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.sizes.sm, color: Colors.textSecondary, marginTop: Spacing.xs, marginBottom: Spacing.xl },
   section: { marginBottom: Spacing.xl },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  sectionTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.sizes.md, color: Colors.textPrimary, marginBottom: Spacing.md },
+  iconTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
+  sectionTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.sizes.md, color: Colors.textPrimary, marginBottom: 0 },
   editButton: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.sizes.sm, color: Colors.primary },
   card: { backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, padding: Spacing.base, borderWidth: 1, borderColor: Colors.glassStroke },
   contactRow: { paddingVertical: Spacing.sm },

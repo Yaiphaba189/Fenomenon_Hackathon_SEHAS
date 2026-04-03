@@ -8,6 +8,7 @@ import {
   RefreshControl, Alert, ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Feather } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, StatusColors } from '../../constants/theme';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useAppStore } from '../../store/useAppStore';
@@ -61,11 +62,11 @@ export default function AlertsScreen() {
     ]);
   };
 
-  const getAlertIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      fall: '🤕', cardiac: '💔', voice_sos: '🆘', voice_distress: '🆘', batch_detection: '📊',
+  const getAlertIcon = (type: string): keyof typeof Feather.glyphMap => {
+    const icons: Record<string, keyof typeof Feather.glyphMap> = {
+      fall: 'activity', cardiac: 'heart', voice_sos: 'mic', voice_distress: 'mic', batch_detection: 'bar-chart-2',
     };
-    return icons[type] || '⚠️';
+    return icons[type] || 'alert-triangle';
   };
 
   const getSeverityColor = (severity: string) => {
@@ -91,7 +92,7 @@ export default function AlertsScreen() {
     <View style={[styles.alertCard, { borderLeftColor: getSeverityColor(item.severity) }]}>
       <View style={styles.alertHeader}>
         <View style={styles.alertTitleRow}>
-          <Text style={styles.alertIcon}>{getAlertIcon(item.type)}</Text>
+          <Feather name={getAlertIcon(item.type)} size={24} color={getSeverityColor(item.severity)} style={{ marginRight: Spacing.xs }} />
           <View style={{ flex: 1 }}>
             <Text style={styles.alertType}>{item.type.replace(/_/g, ' ').toUpperCase()}</Text>
             <Text style={styles.alertTime}>{formatTimestamp(item.timestamp)}</Text>
@@ -109,7 +110,10 @@ export default function AlertsScreen() {
         {item.gps_lat != null && item.gps_lng != null && (
           <View style={styles.row}>
             <Text style={styles.detailLabel}>Location</Text>
-            <Text style={styles.detailValue}>📍 {item.gps_lat.toFixed(4)}, {item.gps_lng.toFixed(4)}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="map-pin" size={14} color={Colors.textPrimary} style={{ marginRight: 4 }} />
+              <Text style={styles.detailValue}>{item.gps_lat.toFixed(4)}, {item.gps_lng.toFixed(4)}</Text>
+            </View>
           </View>
         )}
         {item.acknowledged_by && (
@@ -168,7 +172,7 @@ export default function AlertsScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={{ fontSize: 48 }}>🛡️</Text>
+              <Feather name="shield" size={48} color={Colors.textMuted} style={{ marginBottom: Spacing.sm }} />
               <Text style={styles.emptyTitle}>No Alerts Yet</Text>
               <Text style={styles.emptySubtitle}>Start monitoring to detect emergencies</Text>
             </View>
@@ -192,8 +196,7 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: Spacing.base, paddingBottom: 120 },
   alertCard: { backgroundColor: Colors.surface, borderRadius: BorderRadius.lg, padding: Spacing.base, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.glassStroke, borderLeftWidth: 4 },
   alertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
-  alertTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flex: 1 },
-  alertIcon: { fontSize: 24 },
+  alertTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flex: 1 },
   alertType: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.sizes.sm, color: Colors.textPrimary, letterSpacing: 0.5 },
   alertTime: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.sizes.xs, color: Colors.textMuted, marginTop: 2 },
   alertDetails: { backgroundColor: Colors.surfaceElevated, borderRadius: BorderRadius.sm, padding: Spacing.md, gap: Spacing.sm },
