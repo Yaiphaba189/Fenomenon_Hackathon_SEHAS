@@ -8,8 +8,17 @@ from typing import Any, Iterator
 import psycopg2
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
+from passlib.context import CryptContext
 
 load_dotenv()
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 logger = logging.getLogger(__name__)
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schema.sql"
@@ -104,6 +113,8 @@ def create_alert(patient_id, type, severity, sensor_snapshot, gps_lat=None, gps_
 def upsert_patient(
     patient_id,
     name,
+    email,
+    password_hash,
     age,
     medical_history,
     contacts,
@@ -114,6 +125,8 @@ def upsert_patient(
     query = """
         INSERT INTO patients (
             id,
+            email,
+            password_hash,
             name,
             age,
             medical_history,
@@ -121,8 +134,10 @@ def upsert_patient(
             safe_zone_radius,
             baseline_hr
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO UPDATE SET
+            email = EXCLUDED.email,
+            password_hash = EXCLUDED.password_hash,
             name = EXCLUDED.name,
             age = EXCLUDED.age,
             medical_history = EXCLUDED.medical_history,
@@ -136,6 +151,8 @@ def upsert_patient(
                 query,
                 (
                     patient_id,
+                    email,
+                    password_hash,
                     name,
                     age,
                     medical_history,
@@ -144,6 +161,20 @@ def upsert_patient(
                     baseline_hr,
                 ),
             )
+        return True
+    except Exception:
+        logger.exception("Error upserting patient")
+        return False
+
+def get_patient_by_email(email):
+    query = "SELECT * FROM patients WHERE email = %s"
+    try:
+        with get_cursor(dict_rows=True) as cur:
+            cur.execute(query, (email,))
+            return cur.fetchone()
+    except Exception:
+        logger.exception("Error fetching patient by email")
+        return None
         return True
     except Exception:
         logger.exception("Error upserting patient")
@@ -195,6 +226,162 @@ def get_alert_history(patient_id, limit=20):
     except Exception:
         logger.exception("Error fetching alerts")
         return []
+
+
+def get_recent_alerts(limit=25):
+    query = """
+        SELECT a.*, p.name AS patient_name
+        FROM alerts a
+        LEFT JOIN patients p ON p.id = a.patient_id
+        ORDER BY a.timestamp DESC
+        LIMIT %s
+    """
+    try:
+        with get_cursor(dict_rows=True) as cur:
+            cur.execute(query, (limit,))
+            return cur.fetchall()
+    except Exception:
+        logger.exception("Error fetching recent alerts")
+        return []
+
+
+def get_dashboard_summary():
+    query = """
+        SELECT
+            COUNT(*) FILTER (WHERE status = 'pending') AS pending_count,
+            COUNT(*) FILTER (WHERE status = 'dispatched') AS dispatched_count,
+            COUNT(*) FILTER (WHERE status = 'acknowledged') AS acknowledged_count,
+            COUNT(*) FILTER (WHERE status = 'escalated') AS escalated_count,
+            COUNT(*) FILTER (WHERE timestamp >= NOW() - INTERVAL '24 hours') AS alerts_last_24h,
+            COALESCE(AVG(response_time) FILTER (WHERE response_time IS NOT NULL), 0) AS avg_response_time_seconds
+        FROM alerts
+    """
+    try:
+        with get_cursor(dict_rows=True) as cur:
+            cur.execute(query)
+            return cur.fetchone() or {}
+    except Exception:
+        logger.exception("Error fetching dashboard summary")
+        return {}
+
+
+def get_patient(patient_id):
+    query = "SELECT * FROM patients WHERE id = %s"
+    try:
+        with get_cursor(dict_rows=True) as cur:
+            cur.execute(query, (patient_id,))
+            return cur.fetchone()
+    except Exception:
+        logger.exception("Error fetching patient")
+        return None
+
+
+def list_patients(limit=100):
+    query = """
+        SELECT p.*,
+               (
+                   SELECT MAX(a.timestamp)
+                   FROM alerts a
+                   WHERE a.patient_id = p.id
+               ) AS latest_alert_at
+        FROM patients p
+        ORDER BY latest_alert_at DESC NULLS LAST, p.created_at DESC
+        LIMIT %s
+    """
+    try:
+        with get_cursor(dict_rows=True) as cur:
+            cur.execute(query, (limit,))
+            return cur.fetchall()
+    except Exception:
+        logger.exception("Error listing patients")
+        return []
+
+
+def get_idempotency_response(endpoint: str, idempotency_key: str, request_hash: str):
+    query = """
+        SELECT response_status, response_body
+        FROM idempotency_keys
+        WHERE endpoint = %s
+          AND idempotency_key = %s
+          AND request_hash = %s
+    """
+    try:
+        with get_cursor(dict_rows=True) as cur:
+            cur.execute(query, (endpoint, idempotency_key, request_hash))
+            return cur.fetchone()
+    except Exception:
+        logger.exception("Error fetching idempotency response")
+        return None
+
+
+def save_idempotency_response(
+    endpoint: str,
+    idempotency_key: str,
+    request_hash: str,
+    response_status: int,
+    response_body: dict[str, Any],
+):
+    query = """
+        INSERT INTO idempotency_keys (
+            endpoint,
+            idempotency_key,
+            request_hash,
+            response_status,
+            response_body
+        )
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (endpoint, idempotency_key) DO UPDATE SET
+            request_hash = EXCLUDED.request_hash,
+            response_status = EXCLUDED.response_status,
+            response_body = EXCLUDED.response_body
+    """
+    try:
+        with get_cursor() as cur:
+            cur.execute(
+                query,
+                (
+                    endpoint,
+                    idempotency_key,
+                    request_hash,
+                    response_status,
+                    json.dumps(response_body),
+                ),
+            )
+        return True
+    except Exception:
+        logger.exception("Error saving idempotency response")
+        return False
+
+
+def log_notification_delivery(
+    alert_id,
+    channel: str,
+    recipient: str,
+    status: str,
+    provider_response: str | None = None,
+    error_message: str | None = None,
+):
+    query = """
+        INSERT INTO notification_deliveries (
+            alert_id,
+            channel,
+            recipient,
+            status,
+            provider_response,
+            error_message
+        )
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    try:
+        with get_cursor() as cur:
+            cur.execute(
+                query,
+                (alert_id, channel, recipient, status, provider_response, error_message),
+            )
+        return True
+    except Exception:
+        logger.exception("Error logging notification delivery")
+        return False
 
 
 def get_due_pending_alerts(safety_window_seconds: int, limit: int = 50):

@@ -6,6 +6,8 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- 1. Patients Table
 CREATE TABLE IF NOT EXISTS patients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
     name TEXT NOT NULL,
     age INTEGER CHECK (age >= 0 AND age <= 130),
     medical_history TEXT,
@@ -16,6 +18,8 @@ CREATE TABLE IF NOT EXISTS patients (
 );
 
 ALTER TABLE patients
+    ADD COLUMN IF NOT EXISTS email TEXT UNIQUE,
+    ADD COLUMN IF NOT EXISTS password_hash TEXT,
     ADD COLUMN IF NOT EXISTS safe_zone_radius INTEGER NOT NULL DEFAULT 500,
     ADD COLUMN IF NOT EXISTS baseline_hr FLOAT NOT NULL DEFAULT 72.0,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
@@ -88,6 +92,36 @@ CREATE INDEX IF NOT EXISTS idx_alerts_status_timestamp
 
 CREATE INDEX IF NOT EXISTS idx_alerts_status_dispatched_at
     ON alerts (status, dispatched_at ASC);
+
+-- 4. Idempotency Records
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    id BIGSERIAL PRIMARY KEY,
+    endpoint TEXT NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    request_hash TEXT NOT NULL,
+    response_status INTEGER NOT NULL,
+    response_body JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (endpoint, idempotency_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_idempotency_lookup
+    ON idempotency_keys (endpoint, idempotency_key, request_hash);
+
+-- 5. Notification Delivery Logs
+CREATE TABLE IF NOT EXISTS notification_deliveries (
+    id BIGSERIAL PRIMARY KEY,
+    alert_id UUID REFERENCES alerts(id) ON DELETE CASCADE,
+    channel TEXT NOT NULL,
+    recipient TEXT NOT NULL,
+    status TEXT NOT NULL,
+    provider_response TEXT,
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_deliveries_alert_created
+    ON notification_deliveries (alert_id, created_at DESC);
 
 -- Enable Realtime (optional, for dashboard updates)
 DO $$

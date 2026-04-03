@@ -12,10 +12,12 @@
 """
 
 import os
-import numpy as np
-import joblib
-import tensorflow as tf
+from collections import defaultdict, deque
 from dataclasses import dataclass
+
+import joblib
+import numpy as np
+import tensorflow as tf
 
 MODELS_DIR  = os.path.join(os.path.dirname(__file__), "models")
 SCALER_PATH = os.path.join(MODELS_DIR, "scaler.pkl")
@@ -51,16 +53,36 @@ class SEHASPredictor:
         print("🔄 Loading SEHAS model...")
         self.model  = tf.keras.models.load_model(MODEL_PATH)
         self.scaler = joblib.load(SCALER_PATH)
+        self.sequence_buffers: dict[str, deque[np.ndarray]] = defaultdict(
+            lambda: deque(maxlen=SEQ_LENGTH)
+        )
         print("✅ Predictor ready.")
 
-    def _build_sequence(self, acc_mean: float, acc_std: float, heart_rate: float) -> np.ndarray:
+    def _build_sequence(
+        self,
+        acc_mean: float,
+        acc_std: float,
+        heart_rate: float,
+        sequence_key: str | None = None,
+    ) -> np.ndarray:
         """
-        Builds (1, SEQ_LENGTH, 3) input tensor from a single reading.
-        In production: swap tile() with a real rolling circular buffer.
+        Builds (1, SEQ_LENGTH, 3) input tensor.
+        When a sequence key is provided, a rolling buffer is maintained for that key.
         """
         raw    = np.array([[acc_mean, acc_std, heart_rate]])
-        scaled = self.scaler.transform(raw)
-        seq    = np.tile(scaled, (SEQ_LENGTH, 1))
+        scaled = self.scaler.transform(raw)[0]
+
+        if sequence_key:
+            buffer = self.sequence_buffers[sequence_key]
+            buffer.append(scaled)
+            seq_rows = list(buffer)
+            if len(seq_rows) < SEQ_LENGTH:
+                pad_row = seq_rows[0]
+                seq_rows = [pad_row] * (SEQ_LENGTH - len(seq_rows)) + seq_rows
+            seq = np.array(seq_rows[-SEQ_LENGTH:])
+        else:
+            seq = np.tile(scaled, (SEQ_LENGTH, 1))
+
         return seq.reshape(1, SEQ_LENGTH, 3)
 
     @staticmethod
@@ -81,7 +103,13 @@ class SEHASPredictor:
                 message="⚠️ EMERGENCY DETECTED — Alert triggered!",
             )
 
-    def predict(self, heart_rate: float, acc_mean: float, acc_std: float) -> PredictionResult:
+    def predict(
+        self,
+        heart_rate: float,
+        acc_mean: float,
+        acc_std: float,
+        sequence_key: str | None = None,
+    ) -> PredictionResult:
         """
         Main inference entry point.
 
@@ -93,7 +121,7 @@ class SEHASPredictor:
         Returns:
             PredictionResult with score, risk_level, alert, message
         """
-        seq   = self._build_sequence(acc_mean, acc_std, heart_rate)
+        seq   = self._build_sequence(acc_mean, acc_std, heart_rate, sequence_key=sequence_key)
         score = float(self.model.predict(seq, verbose=0)[0][0])
         return self._classify(score)
 

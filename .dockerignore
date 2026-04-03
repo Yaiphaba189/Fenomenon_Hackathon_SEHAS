@@ -1,0 +1,7 @@
+.git
+.venv
+__pycache__
+*.pyc
+Dataset
+Traning/.venv
+expo-patient-app/node_modules
