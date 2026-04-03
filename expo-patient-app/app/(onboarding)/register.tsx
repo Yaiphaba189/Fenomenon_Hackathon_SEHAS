@@ -111,22 +111,34 @@ export default function RegisterScreen() {
       router.replace('/(tabs)/dashboard');
     } catch (error: any) {
       console.error('Registration error:', error);
-      // If backend is unreachable, proceed offline with a local UUID
-      const localId = '00000000-0000-0000-0000-000000000000'.replace(/0/g, () => (Math.random()*16|0).toString(16));
-      setPatient({
-        id: localId,
-        name: name.trim(),
-        age: parseInt(age),
-        medicalHistory: medicalHistory.trim(),
-        emergencyContacts: validContacts,
-        safeZoneRadius: parseInt(safeZoneRadius) || 500,
-        baselineHr: parseFloat(baselineHr) || 72,
-      });
-      Alert.alert(
-        'Offline Mode',
-        'Could not reach the server. You have been registered locally. Data will sync when online.',
-        [{ text: 'OK', onPress: () => router.replace('/(tabs)/dashboard') }],
-      );
+      
+      const status = error.status || 0;
+      const message = error.message || 'An unexpected error occurred';
+      
+      if (status === 401) {
+        Alert.alert('Authentication Failed', 'The server rejected the API Key. Please verify your SEHAS_API_KEY configuration.');
+      } else if (status === 400) {
+        Alert.alert('Registration Failed', 'This email is already registered. Please login instead.');
+      } else if (status >= 500) {
+        Alert.alert('Server Error', 'The server encountered an error processing your registration. Please try again later.');
+      } else {
+        // Genuine network error or status 0 (likely blocked by Android cleartext policy)
+        const localId = 'local-' + '00000000-0000-0000-0000-000000000000'.replace(/0/g, () => (Math.random()*16|0).toString(16));
+        setPatient({
+          id: localId,
+          name: name.trim(),
+          age: parseInt(age),
+          medicalHistory: medicalHistory.trim(),
+          emergencyContacts: validContacts,
+          safeZoneRadius: parseInt(safeZoneRadius) || 500,
+          baselineHr: parseFloat(baselineHr) || 72,
+        });
+        Alert.alert(
+          'Offline Mode',
+          `Could not reach the server (${message}). You have been registered locally. Data will sync when online.`,
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)/dashboard') }],
+        );
+      }
     } finally {
       setLoading(false);
     }

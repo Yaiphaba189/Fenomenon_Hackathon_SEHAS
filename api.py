@@ -782,12 +782,21 @@ def register_patient(
 
 @app.post("/auth/login", tags=["Auth"])
 def login_patient(credentials: PatientLogin):
-    user = db.get_patient_by_email(credentials.email)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
-        
-    if not db.verify_password(credentials.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    try:
+        user = db.get_patient_by_email(credentials.email)
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+            
+        if not db.verify_password(credentials.password, user["password_hash"]):
+            raise HTTPException(status_code=401, detail="Invalid email or password.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Login database error")
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Database connection error. Please try again later. ({type(e).__name__})"
+        )
         
     # Exclude password hash from response
     user.pop("password_hash", None)

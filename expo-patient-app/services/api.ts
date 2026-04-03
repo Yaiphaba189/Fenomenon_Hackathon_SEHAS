@@ -110,9 +110,13 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
+        let errorBody = '';
+        try {
+          errorBody = await response.text();
+        } catch (e) {}
+        
         throw new ApiError(
-          `API Error ${response.status}: ${response.statusText}`,
+          `API ${response.status}: ${response.statusText}`,
           response.status,
           errorBody,
         );

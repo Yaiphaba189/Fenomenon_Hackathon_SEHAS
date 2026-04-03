@@ -8,17 +8,36 @@ from typing import Any, Iterator
 import psycopg2
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
-from passlib.context import CryptContext
+import hashlib
+import bcrypt
 
 load_dotenv()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def _sha256(password: str) -> bytes:
+    """Pre-hash with SHA256 to ensure input to bcrypt is always <= 72 bytes."""
+    return hashlib.sha256(password.encode("utf-8")).hexdigest().encode("utf-8")
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash a password using bcrypt (with SHA256 pre-hash)."""
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(_sha256(password), salt).decode("utf-8")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password. Tries the new SHA256-pre-hash first, then falls back to direct verify."""
+    try:
+        # 1. Try modern SHA256-pre-hash verification
+        if bcrypt.checkpw(_sha256(plain_password), hashed_password.encode("utf-8")):
+            return True
+            
+        # 2. Fallback to direct verification (for old-style short passwords)
+        # Only attempt if the password itself is <= 72 bytes (bcrypt restriction)
+        if len(plain_password.encode("utf-8")) <= 72:
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+            
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("Password verification error: %s", e)
+    return False
 
 logger = logging.getLogger(__name__)
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schema.sql"
@@ -45,7 +64,7 @@ def get_db_connection():
     try:
         return psycopg2.connect(
             get_database_url(),
-            connect_timeout=int(os.getenv("DB_CONNECT_TIMEOUT_SECONDS", "5")),
+            connect_timeout=int(os.getenv("DB_CONNECT_TIMEOUT_SECONDS", "15")),
         )
     except Exception:
         logger.exception("Database connection error")
@@ -95,6 +114,9 @@ def save_vital_reading(patient_id, heart_rate, acc_mean, acc_std):
         with get_cursor() as cur:
             cur.execute(query, (patient_id, heart_rate, acc_mean, acc_std))
         return True
+    except psycopg2.errors.ForeignKeyViolation:
+        logger.warning(f"Skipping vitals log: patient_id {patient_id} not found in database.")
+        return True # Return True so the /predict endpoint doesn't 500
     except Exception:
         logger.exception("Error saving vitals")
         return False
@@ -188,10 +210,6 @@ def get_patient_by_email(email):
     except Exception:
         logger.exception("Error fetching patient by email")
         return None
-        return True
-    except Exception:
-        logger.exception("Error upserting patient")
-        return False
 
 
 def update_alert_status(alert_id, status):
