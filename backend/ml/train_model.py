@@ -51,7 +51,7 @@ def load_labels(split: str) -> np.ndarray:
 
 
 # ─────────────────────────────────────────────────
-# 2. SIMULATE HEART RATE (Camera PPG)
+# 2. SIMULATE HEART RATE 
 # ─────────────────────────────────────────────────
 def simulate_heart_rate(labels: np.ndarray) -> np.ndarray:
     np.random.seed(42)
